@@ -1,0 +1,52 @@
+<command> 
+<name>list popular user tables</name>
+<description>Gets all tables with type User and sorts them by how many times they have been accessed (since restart).</description >
+<type>Local Syntax</type >
+<documentation>
+<summary>Get all user tables and order them by access count.</summary>
+<remarks>
+<![CDATA[
+<p>This command is used to list all the user tables that are being accessed the most. Mainly for if you're unfamilar with the WMS system and trying to find a user table without looking through the system tables which contain an overwhelming amount of information.</p>
+]]>
+</remarks>
+<example>
+list popular user tables
+</example>
+</documentation>
+<local-syntax> 
+<![CDATA[
+  [SELECT distinct TableName AS 'table_name',
+          SUM(AccessCount) AS 'access_count'
+     FROM (Select Distinct o.Name 'TableName',
+                  d.range_scan_count 'AccessCount'
+             From SysObjects o
+            INNER
+             Join sys.dm_db_index_operational_stats(db_id(), NULL, NULL, NULL) AS d
+               ON d.object_id = o.Id
+            INNER
+             Join SysDepends st
+               ON st.DepId = o.Id
+            INNER
+             Join SysObjects op
+               on op.Id = d.object_id
+            Where o.XType = 'U'
+            Group by o.Name,
+                  o.Id,
+                  op.Name,
+                  d.range_scan_count) x
+    GROUP BY TableName
+    ORDER BY 2 desc]
+  |
+  list user tables
+  |
+  get mls text
+   where mls_id = 'tbl_' || lower(@table_name)
+     and locale_id = @@locale_id catch(@?)
+  |
+  publish data
+   where table_name = lower(@table_name)
+     and table_description = @mls_text
+     and num_accessed_since_restart = @access_count
+]]>
+</local-syntax>
+</command >
