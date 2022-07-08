@@ -1,0 +1,53 @@
+<command>
+<name>list error codes</name>
+<description>This command is used to list all error codes of the WMS.</description>
+<type>Local Syntax</type>
+<documentation>
+<summary>Get all error codes for LES, RF, and DCS systems.</summary>
+<remarks>
+<![CDATA[
+<p>This command is used to list all of the error codes that can be found in the WMS. This includes the RF, LES, and DCS directories, but also includes errors encountered on the webclient when trying to preform certain actions. For the 2020.1 and earlier versions, trace files normally always return -1403 as the error code because SQL is looking for mls_id's that match 'err-102' format instead of 'err102' which is in the table. This can cause trouble shooting issues and so this is a quick way of looking up an error code from a trace. </p>
+]]>
+</remarks>
+<argument name="mls_id"
+alias="error"
+default=""
+required="N"
+type="string">
+Unique error code identifier used to search the mls_id column. If left blank, the command will return all errors. If you specify an error code, you need to use the '=' statement in the where clause,, include 'err' in front of the number for more specific results.  
+</argument>
+<example>
+list error codes
+</example>
+<example>
+list error codes where mls_id = 'err102'
+</example>
+<example>
+list error codes where error = 'err1008'
+</example>
+</documentation>
+<local-syntax>
+<![CDATA[    
+
+/* Check to see if USER specified WHERE clause when calling command */
+if (@mls_id is not null or @error is not null)
+{
+    publish data where mls_id = nvl(@mls_id, @error)
+    |
+    [select *
+       from les_mls_cat
+      where @+mls_id
+         order by mls_id]
+}
+/* Otherwise, return all content from les that is considered an 'error code' */
+else
+{
+    [select *
+       from les_mls_cat
+      where mls_id like 'err%'
+         or mls_text like '%error%'
+         order by mls_id]
+}
+]]>
+</local-syntax>
+</command>
