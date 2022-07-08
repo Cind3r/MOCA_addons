@@ -1,0 +1,7 @@
+<component-level>
+<name>addons</name>
+<description>MOCA Addons custom commands for workflow and QoL improvement.</description>
+<library>addons</library>
+<sort-sequence>6000</sort-sequence>
+<editable>true</editable>
+</component-level>
