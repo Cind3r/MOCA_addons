@@ -1,0 +1,103 @@
+<command>
+<name>list allocation path zone details</name>
+<description>This command is used to list the allocation path for zones and items WMS.</description>
+<type>Local Syntax</type>
+<documentation>
+<summary>Get pick zone configurations for parts in the WMS.</summary>
+<remarks>
+<![CDATA[
+<p>This command is used to list all of of the search allocation path types, the pick zone its looking for, and the uom level specified by the picking method. It also grabs the stoloc in the pick zone, the items in the stoloc, and finally the recieving uom of that item. It also shows all the flags enabled for that specific stoloc, to ensure that it is usable, pickable, and storable.  </p>
+]]>
+</remarks>
+<argument name="wh_id"
+alias=""
+default=""
+required="N"
+type="string">
+</argument>
+<argument name="prtnum"
+alias=""
+default=""
+required="N"
+type="string">
+</argument>
+<argument name="stoloc"
+alias=""
+default=""
+required="N"
+type="string">
+</argument>
+<argument name="pck_zone"
+alias=""
+default=""
+required="N"
+type="string">
+</argument>
+<example>
+list allocation path zone details 
+where wh_id = 'ARW5'
+</example>
+</documentation>
+<local-syntax>
+<![CDATA[    
+/* Grab user specified variables*/
+publish data
+ where wh_id = @wh_id
+ and prtnum = @prtnum
+ and stoloc = @stoloc
+ and pck_zone = @pck_zone
+|
+[select distinct alloc_search_path.search_path_typ,
+        pck_mthd.pck_mthd_nam,
+        alloc_search_path_rule.uomcod as 'pck_mthd_uom',
+        pck_zone.pck_zone_cod,
+        pck_zone.dtlflg,
+        inv_item_count_view.stoloc,
+        inv_sum_view.untqty,
+        inv_item_count_view.prtnum,
+        prtftp_dtl.uomcod as 'prtnum_uom',
+        prtftp_dtl.uomlvl,
+        pck_zone.pipflg,
+        locmst.useflg,
+        locmst.stoflg,
+        locmst.pckflg,
+        pck_zone.pck_steal_flg,
+        pck_zone.subflg,
+        locmst.wh_id
+   from alloc_search_path_rule
+   left
+   join alloc_search_path
+     on alloc_search_path.alloc_search_path_id = alloc_search_path_rule.alloc_search_path_id
+   left
+   join pck_mthd
+     on alloc_search_path_rule.pck_mthd_id = pck_mthd.pck_mthd_id
+   left
+   join pck_zone
+     on alloc_search_path_rule.pck_zone_id = pck_zone.pck_zone_id
+   left
+   join locmst
+     on locmst.pck_zone_id = pck_zone.pck_zone_id
+   join inv_item_count_view
+        /* no left join as we don't care about areas that do not contain items*/
+     on inv_item_count_view.stoloc = locmst.stoloc
+   left
+   join inv_sum_view
+     on inv_sum_view.stoloc = inv_item_count_view.stoloc
+    AND inv_sum_view.stoloc = locmst.stoloc
+    AND inv_sum_view.prtnum = inv_item_count_view.prtnum
+   left
+   join prtftp_dtl
+     on inv_item_count_view.prtnum = prtftp_dtl.prtnum
+    AND inv_item_count_view.wh_id = prtftp_dtl.wh_id
+    AND inv_item_count_view.prt_client_id = prtftp_dtl.prt_client_id
+  WHERE locmst.wh_id = nvl(@wh_id, locmst.wh_id)
+    AND inv_item_count_view.stoloc = nvl(@stoloc, inv_item_count_view.stoloc)
+    AND inv_item_count_view.prtnum = nvl(@prtnum, inv_item_count_view.prtnum)
+    AND pck_zone.pck_zone_cod = nvl(@pck_zone, pck_zone.pck_zone_cod)
+    AND prtftp_dtl.rcv_flg = 1
+  order by pck_zone_cod,
+        pck_mthd_uom,
+        prtnum];
+]]>
+</local-syntax>
+</command>
